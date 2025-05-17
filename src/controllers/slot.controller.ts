@@ -1,26 +1,34 @@
-import { Request, Response, NextFunction } from 'express';
-import { logger } from '../utils/logger';
-import { AppError } from '../middlewares/errorMiddleware';
-import prisma from '../utils/client';
+import { Request, Response, NextFunction } from "express";
+import { logger } from "../utils/logger";
+import { AppError } from "../middlewares/errorMiddleware";
+import prisma from "../utils/client";
 
-export const createSlot = async (req: Request, res: Response, next: NextFunction) => {
+export const createSlot = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { identifier, locationId, status } = req.body;
 
     if (!identifier || !locationId) {
-        logger.error('Slot creation failed: Identifier and locationId are required');
-      return next(new AppError('Identifier and locationId are required', 400));
+      logger.error(
+        "Slot creation failed: Identifier and locationId are required"
+      );
+      next(new AppError("Identifier and locationId are required", 400));
     }
 
     // Check if location exists
-    const location = await prisma.location.findUnique({ where: { id: locationId } });
+    const location = await prisma.location.findUnique({
+      where: { id: locationId },
+    });
     logger.error(`Location not found: ${location?.name}`);
-    if (!location) return next(new AppError('Location not found', 404));
+    if (!location) return next(new AppError("Location not found", 404));
 
     const slot = await prisma.slot.create({
       data: {
         identifier,
-        status: status || 'AVAILABLE',
+        status: status || "AVAILABLE",
         locationId,
       },
     });
@@ -29,11 +37,15 @@ export const createSlot = async (req: Request, res: Response, next: NextFunction
     res.status(201).json({ slot });
   } catch (error) {
     logger.error(`Error creating slot - ${error}`);
-    next(error);
+    return next(error);
   }
 };
 
-export const getAllSlots = async (req: Request, res: Response, next: NextFunction) => {
+export const getAllSlots = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const slots = await prisma.slot.findMany({
       include: {
@@ -41,18 +53,22 @@ export const getAllSlots = async (req: Request, res: Response, next: NextFunctio
       },
     });
     if (!slots || slots.length === 0) {
-      logger.warn('No slots found');
-      return res.status(404).json({ message: 'No slots found' });
+      logger.warn("No slots found");
+      res.status(404).json({ message: "No slots found" });
     }
     logger.info(`Fetched ${slots.length} slots`);
     res.status(200).json({ slots });
   } catch (error) {
     logger.error(`Error fetching slots - ${error}`);
-    next(error);
+    return next(error);
   }
 };
 
-export const getSlotsByLocation = async (req: Request, res: Response, next: NextFunction) => {
+export const getSlotsByLocation = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { locationId } = req.params;
 
@@ -63,17 +79,23 @@ export const getSlotsByLocation = async (req: Request, res: Response, next: Next
 
     if (!slots || slots.length === 0) {
       logger.warn(`No slots found for location: ${locationId}`);
-      return res.status(404).json({ message: 'No slots found for this location' });
+      return res
+        .status(404)
+        .json({ message: "No slots found for this location" });
     }
     logger.info(`Fetched ${slots.length} slots for location: ${locationId}`);
-    res.status(200).json({ slots });
+    return res.status(200).json({ slots });
   } catch (error) {
     logger.error(`Error fetching slots for location - ${error}`);
-    next(error);
+    return next(error);
   }
 };
 
-export const updateSlot = async (req: Request, res: Response, next: NextFunction) => {
+export const updateSlot = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { id } = req.params;
     const { identifier, status, locationId } = req.body;
@@ -88,23 +110,27 @@ export const updateSlot = async (req: Request, res: Response, next: NextFunction
     });
 
     logger.info(`Slot updated: ${id}`);
-    res.status(200).json({ slot });
+    return res.status(200).json({ slot });
   } catch (error) {
     logger.error(`Error updating slot - ${error}`);
-    next(error);
+    return next(error);
   }
 };
 
-export const deleteSlot = async (req: Request, res: Response, next: NextFunction) => {
+export const deleteSlot = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { id } = req.params;
 
     await prisma.slot.delete({ where: { id } });
 
     logger.info(`Slot deleted: ${id}`);
-    res.status(204).send();
+    return res.status(204).send();
   } catch (error) {
     logger.error(`Error deleting slot - ${error}`);
-    next(error);
+    return next(error);
   }
 };
