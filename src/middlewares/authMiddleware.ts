@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import prisma from '../utils/client';
 import { logger } from '../utils/logger';
+import { AppError } from './errorMiddleware';
 
 interface JwtPayload {
   userId: string;
@@ -54,4 +55,15 @@ export const adminOnly = (req: Request, res: Response, next: NextFunction) => {
   } else {
     res.status(403).json({ message: 'Access denied: Admins only' });
   }
+};
+
+
+export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
+  const user = req.user; // assuming populated in protect middleware
+
+  if (!user || user.role !== 'ADMIN') {
+    return next(new AppError('Access denied. Admins only.', 403));
+  }
+
+  next();
 };

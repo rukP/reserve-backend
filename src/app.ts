@@ -2,7 +2,9 @@ import express, { NextFunction, Request, Response } from "express";
 import dotenv from "dotenv";
 import { AppError, errorHandler } from "./middlewares/errorMiddleware";
 import { logger } from "./utils/logger";
-import authRoutes from './routes/authRoutes';
+import authRoutes from './routes/auth.routes';
+import slotRoutes from './routes/slot.routes';
+import locationRoutes from './routes/location.routes';
 import { createDefaultAdmin } from './utils/seedAdmin';
 
 dotenv.config();
@@ -18,6 +20,8 @@ app.get("/api", (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/slots', slotRoutes);
+app.use('/api/locations', locationRoutes);
 
 // CATCH-ALL ROUTE
 app.use((req: Request, res: Response, next: NextFunction) => {
