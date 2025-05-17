@@ -68,7 +68,7 @@ export const getSlotsByLocation = async (
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> => {
   try {
     const { locationId } = req.params;
 
@@ -79,12 +79,12 @@ export const getSlotsByLocation = async (
 
     if (!slots || slots.length === 0) {
       logger.warn(`No slots found for location: ${locationId}`);
-      return res
+      res
         .status(404)
         .json({ message: "No slots found for this location" });
     }
     logger.info(`Fetched ${slots.length} slots for location: ${locationId}`);
-    return res.status(200).json({ slots });
+    res.status(200).json({ slots });
   } catch (error) {
     logger.error(`Error fetching slots for location - ${error}`);
     return next(error);
@@ -95,7 +95,7 @@ export const updateSlot = async (
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> => {
   try {
     const { id } = req.params;
     const { identifier, status, locationId } = req.body;
@@ -110,7 +110,7 @@ export const updateSlot = async (
     });
 
     logger.info(`Slot updated: ${id}`);
-    return res.status(200).json({ slot });
+    res.status(200).json({ slot });
   } catch (error) {
     logger.error(`Error updating slot - ${error}`);
     return next(error);
@@ -121,14 +121,14 @@ export const deleteSlot = async (
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> => {
   try {
     const { id } = req.params;
 
     await prisma.slot.delete({ where: { id } });
 
     logger.info(`Slot deleted: ${id}`);
-    return res.status(204).send();
+    res.status(204).send();
   } catch (error) {
     logger.error(`Error deleting slot - ${error}`);
     return next(error);
