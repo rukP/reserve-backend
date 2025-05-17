@@ -22,7 +22,6 @@ export const createSlot = async (
     const location = await prisma.location.findUnique({
       where: { id: locationId },
     });
-    logger.error(`Location not found: ${location?.name}`);
     if (!location) return next(new AppError("Location not found", 404));
 
     const slot = await prisma.slot.create({
@@ -33,7 +32,7 @@ export const createSlot = async (
       },
     });
 
-    logger.info(`Slot created: ${slot.identifier} at location ${locationId}`);
+    logger.info(`Slot created: ${slot.identifier} at location ${location.name}`);
     res.status(201).json({ slot });
   } catch (error) {
     logger.error(`Error creating slot - ${error}`);

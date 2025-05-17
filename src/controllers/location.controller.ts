@@ -3,6 +3,7 @@ import { logger } from "../utils/logger";
 import prisma from "../utils/client";
 import { AppError } from "../middlewares/errorMiddleware";
 
+// CREATE LOCATION
 export const createLocation = async (
   req: Request,
   res: Response,
@@ -20,14 +21,16 @@ export const createLocation = async (
       data: { name, address },
     });
 
-    logger.info(`Location created: ${location.name}`);
     res.status(201).json({ location });
+    logger.info(`Location created: ${location.name}`);
     return next();
   } catch (error) {
+    logger.error(`Error creating location - ${error}`);
     return next(error);
   }
 };
 
+// GET LOCATIONS
 export const getLocations = async (
   req: Request,
   res: Response,
@@ -38,12 +41,12 @@ export const getLocations = async (
       include: { slots: true },
     });
     if (!locations || locations.length === 0) {
-      logger.warn("No locations found");
       res.status(404).json({ message: "No locations found" });
+      logger.warn("No locations found");
       return next();
     }
-    logger.info(`Fetched ${locations.length} locations`);
     res.status(200).json({ locations });
+    logger.info(`Fetched ${locations.length} locations`);
     return next();
   } catch (error) {
     logger.error(`Error fetching locations - ${error}`);
@@ -51,6 +54,7 @@ export const getLocations = async (
   }
 };
 
+// UPDATE LOCATION
 export const updateLocation = async (
   req: Request,
   res: Response,
@@ -65,8 +69,8 @@ export const updateLocation = async (
       data: { name, address },
     });
 
-    logger.info(`Location updated: ${id}`);
     res.status(200).json({ location });
+    logger.info(`Location updated: ${id}`);
     return next();
   } catch (error) {
     logger.error(`Error updating location - ${error}`);
@@ -74,6 +78,7 @@ export const updateLocation = async (
   }
 };
 
+// DELETE A LOCATION
 export const deleteLocation = async (
   req: Request,
   res: Response,
@@ -84,8 +89,8 @@ export const deleteLocation = async (
 
     await prisma.location.delete({ where: { id } });
 
-    logger.info(`Location deleted: ${id}`);
     res.status(204).send();
+    logger.info(`Location deleted: ${id}`);
     return next();
   } catch (error) {
     logger.error(`Error deleting location - ${error}`);

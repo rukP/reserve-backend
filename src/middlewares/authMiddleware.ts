@@ -25,55 +25,46 @@ export const protect = async (
   res: Response,
   next: NextFunction
 ) => {
-  let token;
+  const authHeader = req.headers.authorization;
 
-  if (req.headers.authorization?.startsWith("Bearer")) {
-    token = req.headers.authorization.split(" ")[1];
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    logger.error("No token provided");
+    return next(new AppError("Not authorized, no token provided", 401));
+  }
 
-    try {
-      const decoded = jwt.verify(
-        token,
-        process.env.JWT_SECRET || "supersecret"
-      ) as JwtPayload;
+  const token = authHeader.split(" ")[1];
 
-      const user = await prisma.user.findUnique({
-        where: { id: decoded.userId },
-        select: { id: true, role: true },
-      });
+  try {
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET as string
+    ) as JwtPayload;
 
-      if (!user) {
-        res.status(401).json({ message: "User not found" });
-        return next();
-      }
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true, role: true },
+    });
 
-      req.user = user;
-      return next();
-    } catch (err) {
-      logger.warn("Token verification failed");
-      res.status(401).json({ message: "Not authorized, token failed" });
-      return next();
+    if (!user) {
+      logger.error("User not found");
+      return next(new AppError("User not found", 401));
     }
-  }
 
-  res.status(401).json({ message: "Not authorized, no token" });
-  return next();
-};
-
-export const adminOnly = (req: Request, res: Response, next: NextFunction) => {
-  if (req.user && req.user.role === "ADMIN") {
+    req.user = { id: user.id, role: user.role };
+    logger.info(`User ${user.id} authenticated successfully`);
     return next();
+  } catch (err) {
+    logger.warn(`Token verification failed - ${err}`);
+    return next(new AppError("Not authorized, token failed", 401));
   }
-
-  res.status(403).json({ message: "Access denied: Admins only" });
-  return next();
 };
 
 export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
-  const user = req.user;
-
-  if (!user || user.role !== "ADMIN") {
+  if (!req.user || req.user.role !== "ADMIN") {
+    logger.error("Access denied. Admins only.");
     return next(new AppError("Access denied. Admins only.", 403));
   }
 
+  logger.info(`User ${req.user.id} is an admin`);
   return next();
 };
