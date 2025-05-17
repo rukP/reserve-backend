@@ -3,6 +3,7 @@ import { logger } from "../utils/logger";
 import { AppError } from "../middlewares/errorMiddleware";
 import prisma from "../utils/client";
 
+// CREATE A SLOT
 export const createSlot = async (
   req: Request,
   res: Response,
@@ -12,17 +13,30 @@ export const createSlot = async (
     const { identifier, locationId, status } = req.body;
 
     if (!identifier || !locationId) {
-      logger.error(
-        "Slot creation failed: Identifier and locationId are required"
-      );
-      next(new AppError("Identifier and locationId are required", 400));
+      logger.error("Slot creation failed: Identifier and locationId are required");
+      return next(new AppError("Identifier and locationId are required", 400));
     }
 
     // Check if location exists
     const location = await prisma.location.findUnique({
       where: { id: locationId },
     });
-    if (!location) return next(new AppError("Location not found", 404));
+    if (!location) {
+      return next(new AppError("Location not found", 404));
+    }
+
+    // Check if slot identifier already exists at this location
+    const existingSlot = await prisma.slot.findFirst({
+      where: {
+        identifier,
+        locationId,
+      },
+    });
+
+    if (existingSlot) {
+      logger.warn(`Slot '${identifier}' already exists at location '${location.name}'`);
+      return next(new AppError("Slot with this identifier already exists at the specified location", 409));
+    }
 
     const slot = await prisma.slot.create({
       data: {
@@ -40,6 +54,7 @@ export const createSlot = async (
   }
 };
 
+// GET ALL SLOTS
 export const getAllSlots = async (
   req: Request,
   res: Response,
@@ -63,6 +78,7 @@ export const getAllSlots = async (
   }
 };
 
+// GET SLOTS BY LOCATION
 export const getSlotsByLocation = async (
   req: Request,
   res: Response,
@@ -82,6 +98,7 @@ export const getSlotsByLocation = async (
         .status(404)
         .json({ message: "No slots found for this location" });
     }
+
     logger.info(`Fetched ${slots.length} slots for location: ${locationId}`);
     res.status(200).json({ slots });
   } catch (error) {
@@ -90,6 +107,7 @@ export const getSlotsByLocation = async (
   }
 };
 
+// UPDATE A SLOT
 export const updateSlot = async (
   req: Request,
   res: Response,
@@ -99,12 +117,35 @@ export const updateSlot = async (
     const { id } = req.params;
     const { identifier, status, locationId } = req.body;
 
+    const existingSlot = await prisma.slot.findUnique({ where: { id } });
+    if (!existingSlot) {
+      return next(new AppError("Slot not found", 404));
+    }
+
+    // If identifier or location is being changed, check for conflicts
+    if (
+      (identifier && identifier !== existingSlot.identifier) ||
+      (locationId && locationId !== existingSlot.locationId)
+    ) {
+      const duplicateSlot = await prisma.slot.findFirst({
+        where: {
+          identifier: identifier || existingSlot.identifier,
+          locationId: locationId || existingSlot.locationId,
+          NOT: { id }, // Exclude current slot
+        },
+      });
+
+      if (duplicateSlot) {
+        return next(new AppError("Another slot with this identifier already exists at the target location", 409));
+      }
+    }
+
     const slot = await prisma.slot.update({
       where: { id },
       data: {
-        identifier,
-        status,
-        locationId,
+        identifier: identifier || existingSlot.identifier,
+        status: status || existingSlot.status,
+        locationId: locationId || existingSlot.locationId,
       },
     });
 
@@ -116,6 +157,7 @@ export const updateSlot = async (
   }
 };
 
+// DELETE A SLOT
 export const deleteSlot = async (
   req: Request,
   res: Response,
