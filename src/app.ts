@@ -7,6 +7,7 @@ import { logger } from "./utils/logger";
 import authRoutes from "./routes/auth.routes";
 import slotRoutes from "./routes/slot.routes";
 import locationRoutes from "./routes/location.routes";
+import reservationRoutes from "./routes/reservation.routes"
 import { createDefaultAdmin } from "./utils/seedAdmin";
 
 dotenv.config();
@@ -27,6 +28,7 @@ app.get("/api", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/slots", slotRoutes);
 app.use("/api/locations", locationRoutes);
+app.use("/api/reservations", reservationRoutes)
 
 // CATCH-ALL ROUTE
 app.use((req: Request, res: Response, next: NextFunction) => {

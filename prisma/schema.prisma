@@ -48,8 +48,7 @@ model Slot {
   locationId String
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
-  @@unique([identifier, locationId]) // composite unique constraint
-
+  @@unique([identifier, locationId])
   reservations Reservation[]
 
 }
